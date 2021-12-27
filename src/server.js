@@ -16,10 +16,14 @@ const handleListen = () => console.log(`Listening on http://localhost:3000`)
 const server = http.createServer(app)
 const wss = new WebSocket.Server({ server })
 
-function handleConnection(socket) {
-    console.log('socket', socket)
-}
+wss.on('connection', (socket) => {
+    console.log('Connected to Brower ✅')
+    socket.on('close', () => console.log('Disconnected from the Brower ❎'))
+    socket.on('message', (message) => {
+        console.log('messsage', message)
+    })
 
-wss.on("connection", handleConnection)
+    socket.send('hello!')
+})
 
 server.listen(3000, handleListen);
