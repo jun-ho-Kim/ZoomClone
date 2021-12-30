@@ -16,11 +16,17 @@ const handleListen = () => console.log(`Listening on http://localhost:3000`)
 const server = http.createServer(app)
 const wss = new WebSocket.Server({ server })
 
+//서로 다른 브라우저에서도 메세지를 주고 받을 수 있도록
+// sockets array에 socket들을 넣어준 후 sockets에게 message를 보낸다.
+const sockets = []
+
 wss.on('connection', (socket) => {
     console.log('Connected to Brower ✅')
+    sockets.push(socket)
     socket.on('close', () => console.log('Disconnected from the Brower ❎'))
     socket.on('message', (message) => {
         console.log('messsage', message)
+        sockets.forEach(aSocket => aSocket.send(message))
     })
 
     socket.send('hello!')
