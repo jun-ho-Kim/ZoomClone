@@ -21,12 +21,21 @@ const wss = new WebSocket.Server({ server })
 const sockets = []
 
 wss.on('connection', (socket) => {
+    socket['nickname'] = '익명'
     console.log('Connected to Brower ✅')
     sockets.push(socket)
     socket.on('close', () => console.log('Disconnected from the Brower ❎'))
-    socket.on('message', (message) => {
+    socket.on('message', (msg) => {
+        const message = JSON.parse(msg)
+        switch (message.type) {
+            case 'new_message':
+                sockets.forEach((aSocket) => aSocket.send(`${socket.nickname}: ${message.payload}`))
+                break;
+            case 'nickname':
+                socket['nickname'] = message.payload
+                break;
+        }
         console.log('messsage', message)
-        sockets.forEach(aSocket => aSocket.send(message))
     })
 
     socket.send('hello!')
