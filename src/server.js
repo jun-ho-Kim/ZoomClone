@@ -1,7 +1,6 @@
 import express from 'express'
-import http from 'http';
-import WebSocket from 'ws';
-
+import http from 'http'
+import SocketIO from 'socket.io'
 
 const app = express();
 
@@ -10,11 +9,15 @@ app.set('views', __dirname + '/views')
 app.use('/public', express.static(__dirname + '/public'))
 app.get('/', (req, res) => res.render('home'))
 
-const handleListen = () => console.log(`Listening on http://localhost:3000`)
+const httpServer = http.createServer(app)
+const wsServer = SocketIO(httpServer)
 
+wsServer.on('connection', (socket) => {
+    console.log(socket)
+})
 
-const server = http.createServer(app)
-const wss = new WebSocket.Server({ server })
+/*
+const wss = new WebSocket.Server({ server });
 
 //서로 다른 브라우저에서도 메세지를 주고 받을 수 있도록
 // sockets array에 socket들을 넣어준 후 sockets에게 message를 보낸다.
@@ -35,10 +38,10 @@ wss.on('connection', (socket) => {
                 socket['nickname'] = message.payload
                 break;
         }
-        console.log('messsage', message)
     })
 
-    socket.send('hello!')
 })
+*/
+const handleListen = () => console.log(`Listening on http://localhost:3000`);
 
-server.listen(3000, handleListen);
+httpServer.listen(3000, handleListen);
