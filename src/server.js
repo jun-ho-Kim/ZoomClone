@@ -1,6 +1,6 @@
 import express from 'express'
 import http from 'http'
-import SocketIO from 'socket.io'
+import { Server } from 'socket.io'
 
 const app = express();
 
@@ -10,10 +10,15 @@ app.use('/public', express.static(__dirname + '/public'))
 app.get('/', (req, res) => res.render('home'))
 
 const httpServer = http.createServer(app)
-const wsServer = SocketIO(httpServer)
+const wsServer = new Server(httpServer)
 
 wsServer.on('connection', (socket) => {
-    console.log(socket)
+    socket.on('enter_room', (msg, done) => {
+        console.log(msg)
+        setTimeout(() => {
+            done()
+        }, 10000)
+    })
 })
 
 /*
