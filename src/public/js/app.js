@@ -95,24 +95,25 @@ camerasSelecet.addEventListener('input', handleCameraChange)
 const welcome = document.getElementById('welcome')
 const welcomeForm = welcome.querySelector('form')
 
-async function startMedia() {
+async function initCall() {
     welcome.hidden = true
     call.hidden = false
     await getMedia()
     makeConnection()
 }
 
-function handleWelcomSumbit(event) {
+async function handleWelcomSumbit(event) {
     event.preventDefault()
     const input = welcomeForm.querySelector('input')
-    socket.emit('join_room', input.value, startMedia)
+    await initCall()
+    socket.emit('join_room', input.value)
     roomName = input.value
     input.value = ''
 }
 
 welcomeForm.addEventListener('submit', handleWelcomSumbit)
 
-//peerA인 브라우저에서 실행
+//peerA(기존에 room에 있던 참가자)인 브라우저에서 실행
 socket.on('welcome', async () => {
     const offer = await myPeerConnection.createOffer()
     myPeerConnection.setLocalDescription(offer)
@@ -120,8 +121,16 @@ socket.on('welcome', async () => {
     socket.emit('offer', offer, roomName)
 })
 
-socket.on('offer', (offer) => {
-    console.log(offer)
+//peerB(새로 들어온 참가자)인 브라우저에서 실행
+socket.on('offer', async (offer) => {
+    myPeerConnection.setRemoteDescription(offer)
+    const answer = await myPeerConnection.createAnswer()
+    myPeerConnection.setLocalDescription(answer)
+    socket.emit('answer', answer, roomName)
+})
+
+socket.on('answer', (answer) => {
+    myPeerConnection.setRemoteDescription(answer)
 })
 
 // RTC Code
