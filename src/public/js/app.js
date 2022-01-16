@@ -12,6 +12,7 @@ let myStream
 let muted = false
 let cameraOff = false
 let roomName
+let myPeerConnection
 
 async function getCameras() {
     try {
@@ -36,12 +37,12 @@ async function getCameras() {
 
 async function getMedia(deviceId) {
     const initialContrains = {
-        audio: false,
+        audio: true,
         video: { facingMode: 'user' },
     };
 
     const cameraConstrains = {
-        audio: false,
+        audio: true,
         video: { deviceId: { exact: deviceId } },
     };
     try {
@@ -94,10 +95,11 @@ camerasSelecet.addEventListener('input', handleCameraChange)
 const welcome = document.getElementById('welcome')
 const welcomeForm = welcome.querySelector('form')
 
-function startMedia() {
+async function startMedia() {
     welcome.hidden = true
     call.hidden = false
-    getMedia()
+    await getMedia()
+    makeConnection()
 }
 
 function handleWelcomSumbit(event) {
@@ -110,6 +112,24 @@ function handleWelcomSumbit(event) {
 
 welcomeForm.addEventListener('submit', handleWelcomSumbit)
 
-socket.on('welcome', () => {
-    console.log('someone joined')
+//peerA인 브라우저에서 실행
+socket.on('welcome', async () => {
+    const offer = await myPeerConnection.createOffer()
+    myPeerConnection.setLocalDescription(offer)
+    console.log("sent the offer");
+    socket.emit('offer', offer, roomName)
 })
+
+socket.on('offer', (offer) => {
+    console.log(offer)
+})
+
+// RTC Code
+
+//양쪽 브라우저에 peer-to-peer 연결
+//그 다음 양쪽 브라우저에서 카메라와 마이크의 데이터 stream을 받아서 
+// 그것들을 안에 집어 넣었다.
+function makeConnection() {
+    myPeerConnection = new RTCPeerConnection()
+    myStream.getTracks().forEach(track => myPeerConnection.addTrack(track, myStream))
+}
