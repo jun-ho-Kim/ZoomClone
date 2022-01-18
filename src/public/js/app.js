@@ -123,14 +123,22 @@ socket.on('welcome', async () => {
 
 //peerB(새로 들어온 참가자)인 브라우저에서 실행
 socket.on('offer', async (offer) => {
+    console.log('recevied the offer')
     myPeerConnection.setRemoteDescription(offer)
     const answer = await myPeerConnection.createAnswer()
     myPeerConnection.setLocalDescription(answer)
     socket.emit('answer', answer, roomName)
+    console.log('sent the answer')
 })
 
 socket.on('answer', (answer) => {
+    console.log('received the answer')
     myPeerConnection.setRemoteDescription(answer)
+})
+
+socket.on('ice', ice => {
+    console.log('received candidate')
+    myPeerConnection.addIceCandidate(ice)
 })
 
 // RTC Code
@@ -140,5 +148,24 @@ socket.on('answer', (answer) => {
 // 그것들을 안에 집어 넣었다.
 function makeConnection() {
     myPeerConnection = new RTCPeerConnection()
+    myPeerConnection.addEventListener('icecandidate', handleIce)
+    myPeerConnection.addEventListener("track", (data) => {
+        console.log('data.stream', data.stream)
+        const peerFace = document.getElementById("peerFace");
+        peerFace.srcObject = data.streams[0];
+    });
     myStream.getTracks().forEach(track => myPeerConnection.addTrack(track, myStream))
+}
+
+function handleIce(data) {
+    console.log('Sent candidate', data)
+    socket.emit('ice', data.candidate, roomName)
+}
+
+function handleAddStream(data) {
+    console.log('data.stream', data.stream)
+    const peerFace = document.getElementById('peerFace')
+
+
+
 }
