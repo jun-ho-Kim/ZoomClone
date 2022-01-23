@@ -1,6 +1,5 @@
 import express from 'express'
 import http from 'http'
-import { SocketAddress } from 'net';
 import { Server } from 'socket.io'
 
 const app = express();
@@ -13,73 +12,23 @@ app.get('/', (req, res) => res.render('home'))
 const httpServer = http.createServer(app)
 const wsServer = new Server(httpServer)
 
-function publicRooms() {
-    const {
-        sockets: {
-            adapter: { sids, rooms }
-        }
-    } = wsServer
-
-    const publicRooms = []
-
-    rooms.forEach((_, key) => {
-        if (sids.get(key) === undefined) {
-            publicRooms.push(key)
-        }
-    })
-
-    return publicRooms
-}
-
-function countRoom(roomName) {
-    return wsServer.sockets.adapter.rooms.get(roomName)?.size()
-}
-
 wsServer.on('connection', (socket) => {
-    socket["nickname"] = "Anon"
-    socket.on('enter_room', (roomName, done) => {
+    socket.on('join_room', (roomName) => {
         socket.join(roomName)
-        done()
-        socket.to(roomName).emit('welcome', socket.nickname, countRoom(roomName))
-        wsServer.sockets.emit('room_change', publicRooms(roomName))
+        socket.to(roomName).emit('welcome')
     })
-    socket.on('disconnecting', () => {
-        //이것은 array 같은 set이여서 iterable(반복)이 가능하다
-        socket.rooms.forEach(room => socket.to(room).emit('bye', socket.nickname, countRoom(room) - 1))
-        wsServer.sockets.emit('room_change', publicRooms())
+    socket.on('offer', (offer, roomName) => {
+        socket.to(roomName).emit('offer', offer)
     })
-    socket.on('new_message', (msg, room, done) => {
-        socket.to(room).emit('new_message', `${socket.nickname}: ${msg}`)
-        done()
+    socket.on('answer', (answer, roomName) => {
+        socket.to(roomName).emit('answer', answer)
     })
-    socket.on('nickname', (nickname) => (socket["nickname"] = nickname))
+    socket.on('ice', (ice, roomName) => {
+        socket.to(roomName).emit('ice', ice)
+    })
 })
-/*
-const wss = new WebSocket.Server({ server });
 
-//서로 다른 브라우저에서도 메세지를 주고 받을 수 있도록
-// sockets array에 socket들을 넣어준 후 sockets에게 message를 보낸다.
-const sockets = []
 
-wss.on('connection', (socket) => {
-    socket['nickname'] = '익명'
-    console.log('Connected to Brower ✅')
-    sockets.push(socket)
-    socket.on('close', () => console.log('Disconnected from the Brower ❎'))
-    socket.on('message', (msg) => {
-        const message = JSON.parse(msg)
-        switch (message.type) {
-            case 'new_message':
-                sockets.forEach((aSocket) => aSocket.send(`${socket.nickname}: ${message.payload}`))
-                break;
-            case 'nickname':
-                socket['nickname'] = message.payload
-                break;
-        }
-    })
-
-})
-*/
 const handleListen = () => console.log(`Listening on http://localhost:3000`);
 
 httpServer.listen(3000, handleListen);
